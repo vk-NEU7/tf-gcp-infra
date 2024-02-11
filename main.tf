@@ -1,13 +1,3 @@
-variable "region" {}
-variable "filePath" {}
-variable "routing_mode_RGL" {}
-variable "auto_create_subnets" {}
-variable "project_name" {}
-variable "ip_cidr_range_webapp" {}
-variable "ip_cidr_range_db" {}
-variable "webapp_destination" {}
-
-
 provider "google" {
     project = var.project_name
     region = var.region
