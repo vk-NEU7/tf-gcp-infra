@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  install_dependencies:
+  Terraform_build:
     runs-on: ubuntu-latest
 
     steps:
