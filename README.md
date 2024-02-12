@@ -13,6 +13,7 @@ Instructions for setting up the infrastructure using Terraform.
 1. **Clone the Repository:**
     ```bash
     git clone https://github.com/cloudapp6225/tf-gcp-infra.git
+    
     cd tf-gcp-infra
     ```
 
