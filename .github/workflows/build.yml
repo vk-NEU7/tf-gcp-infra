@@ -22,6 +22,5 @@ jobs:
 
       - name: Validate Terraform
         run: |
-          ls -al
           terraform init
           terraform validate
