@@ -32,7 +32,7 @@ resource "google_compute_subnetwork" "db_subnet" {
 
 resource "google_compute_route" "webapp_subnet_route" {
     name = "webapp-route"
-    network = google_compute_network.private_vpc_assn3.id
+    network = google_compute_subnetwork.webapp_subnet.network
     dest_range = var.webapp_destination
     priority = 1000
     next_hop_gateway = "default-internet-gateway"
