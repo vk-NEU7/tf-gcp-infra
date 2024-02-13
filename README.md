@@ -13,29 +13,34 @@ Instructions for setting up the infrastructure using Terraform.
 1. **Clone the Repository:**
     ```bash
     git clone https://github.com/cloudapp6225/tf-gcp-infra.git
-    
+
     cd tf-gcp-infra
     ```
 
-2. **Initialize Terraform:**
+2. **Enable google cloud compute engine API**
+   ```bash
+    $ gcloud services enable compute.googleapis.com
+    ```
+
+3. **Initialize Terraform:**
     ```bash
     terraform init
     ```
 
-3. **Terraform Configuration:**
+4. **Terraform Configuration:**
     Review the `main.tf`, `terraform.tfvars`. Modify variables in `terraform.tfvars` as needed for your environment.
 
-4. **Plan Infrastructure Changes:**
+5. **Plan Infrastructure Changes:**
     ```bash
     terraform plan
     ```
 
-5. **Apply Infrastructure Changes:**
+6. **Apply Infrastructure Changes:**
     ```bash
     terraform apply
     ```
 
-6. **Verify the Infrastructure:**
+7. **Verify the Infrastructure:**
     After Terraform applies the changes successfully, verify the infrastructure on GCP.
 
 ## Cleaning Up
