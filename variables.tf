@@ -33,3 +33,21 @@ variable "webapp_destination" {
     type = string
     description = "Route for webapp subnet"
 }
+
+variable "webapp_subnet" {
+    type = string
+    default = "webapp"
+    description = "Name of webapp subnet"
+}
+
+variable "db_subnet" {
+    type = string
+    default = "db"
+    description = "Name of db subnet"
+}
+
+variable "webapp_subnet_route" {
+    type = string
+    default = "webapp-route"
+    description = "Name of webpp subnet route"
+}
