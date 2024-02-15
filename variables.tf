@@ -51,3 +51,8 @@ variable "webapp_subnet_route" {
     default = "webapp-route"
     description = "Name of webpp subnet route"
 }
+
+variable "delete_default_route" {
+    type = bool
+    default = false
+}

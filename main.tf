@@ -14,6 +14,7 @@ resource "google_compute_network" "private_vpc_assn3" {
     name = "vpc-${random_string.vpc_suffix.result}"
     auto_create_subnetworks = var.auto_create_subnets
     routing_mode = var.routing_mode_RGL
+    delete_default_routes_on_create = var.delete_default_route
 }
 
 resource "google_compute_subnetwork" "webapp_subnet" {
@@ -34,6 +35,5 @@ resource "google_compute_route" "webapp_subnet_route" {
     name = var.webapp_subnet_route
     network = google_compute_subnetwork.webapp_subnet.network
     dest_range = var.webapp_destination
-    priority = 1000
     next_hop_gateway = "default-internet-gateway"
 }
