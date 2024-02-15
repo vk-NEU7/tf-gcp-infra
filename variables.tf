@@ -56,3 +56,11 @@ variable "delete_default_route" {
     type = bool
     default = false
 }
+
+variable "next_hop_gateway" {
+    type = string
+}
+
+variable "vpc_name" {
+    type = list(string)
+}
