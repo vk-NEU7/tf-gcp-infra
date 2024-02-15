@@ -3,7 +3,7 @@ provider "google" {
     region = var.region
 }
 
-resource "random_string" "vpc_prefix" {
+resource "random_string" "vpc_suffix" {
     length = 4
     lower = true
     upper = false
@@ -11,7 +11,7 @@ resource "random_string" "vpc_prefix" {
 }
 
 resource "google_compute_network" "private_vpc_assn3" {
-    name = "${random_string.vpc_prefix.result}-vpc"
+    name = "vpc-${random_string.vpc_suffix.result}"
     auto_create_subnetworks = var.auto_create_subnets
     routing_mode = var.routing_mode_RGL
 }
