@@ -3,6 +3,10 @@ variable "region" {
   description = "Google cloud region"
 }
 
+variable "zone" {
+    type = string
+}
+
 variable "routing_mode_RGL" {
     type = string
     description = "routing_mode_RGL"
@@ -65,18 +69,51 @@ variable "vpc_name" {
     type = string
 }
 
-variable "instance_name" {
+variable "webapp_instance_name" {
     type = string
 }
 
-variable "instance_type" {
+variable "webapp_instance_type" {
     type = string
 }
 
-variable "zone" {
+variable "webapp_instance_tags" {
+    type = list(string)
+}
+
+variable "webapp_instance_image" {
     type = string
 }
 
-variable "instance_image" {
+variable "webapp_instance_size" {
+    type = number
+}
+
+variable "webapp_instance_bootdisk_type" {
     type = string
+}
+
+variable "webapp_instance_networktier" {
+    type = string
+}
+
+variable "webapp_firewall_name" {
+    type = string
+}
+
+variable "webapp_firewall_protocol" {
+    type = string
+}
+
+variable "webapp_firewall_protocol_ports" {
+    type = list(string)
+}
+
+variable "webapp_firewall_target_tags" {
+    type = list(string)
+}
+
+variable "webapp_firewall_source_tags" {
+    type = list(string)
+  
 }

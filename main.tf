@@ -39,28 +39,28 @@ resource "google_compute_route" "webapp_subnet_route" {
 }
 
 resource "google_compute_firewall" "private_vpc_firewall" {
-    name = "webapp-http-firewall"
+    name = var.webapp_firewall_name
     network = google_compute_network.private_vpc.name
 
     allow {
-      protocol = "tcp"
-      ports = ["8080"]
+      protocol = var.webapp_firewall_protocol
+      ports = var.webapp_firewall_protocol_ports
     }
-    source_tags = []
-    target_tags = ["webapp-instance"]
+    source_tags = var.webapp_firewall_source_tags
+    target_tags = var.webapp_firewall_target_tags
 }
 
 resource "google_compute_instance" "webapp_instance" {
-    name = var.instance_name
-    machine_type = var.instance_type
+    name = var.webapp_instance_name
+    machine_type = var.webapp_instance_type
     zone = var.zone
 
-    tags = ["webapp-instance"]
+    tags = var.webapp_instance_tags
     boot_disk {
         initialize_params {
-          image = var.instance_image
-          size = 100
-          type = "pd-balanced"
+          image = var.webapp_instance_image
+          size = var.webapp_instance_size
+          type = var.webapp_instance_bootdisk_type
         }
     }
 
@@ -68,7 +68,7 @@ resource "google_compute_instance" "webapp_instance" {
         network = google_compute_network.private_vpc.name
         subnetwork = google_compute_subnetwork.webapp_subnet.name
         access_config {
-        network_tier = "PREMIUM"
+        network_tier = var.webapp_instance_networktier
       }
     }
 }
