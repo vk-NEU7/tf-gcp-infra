@@ -62,5 +62,21 @@ variable "next_hop_gateway" {
 }
 
 variable "vpc_name" {
-    type = list(string)
+    type = string
+}
+
+variable "instance_name" {
+    type = string
+}
+
+variable "instance_type" {
+    type = string
+}
+
+variable "zone" {
+    type = string
+}
+
+variable "instance_image" {
+    type = string
 }
