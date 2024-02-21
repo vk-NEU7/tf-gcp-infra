@@ -105,7 +105,15 @@ variable "webapp_firewall_protocol" {
     type = string
 }
 
-variable "webapp_firewall_protocol_ports" {
+variable "webapp_firewall_ssh" {
+    type = string
+}
+
+variable "webapp_firewall_protocol_allow_ports" {
+    type = list(string)
+}
+
+variable "webapp_firewall_protocol_deny_ports" {
     type = list(string)
 }
 

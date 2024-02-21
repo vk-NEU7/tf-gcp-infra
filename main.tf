@@ -3,12 +3,12 @@ provider "google" {
     region = var.region
 }
 
-resource "random_string" "vpc_suffix" {
-    length = 4
-    lower = true
-    upper = false
-    special = false
-}
+# resource "random_string" "vpc_suffix" {
+#     length = 4
+#     lower = true
+#     upper = false
+#     special = false
+# }
 
 resource "google_compute_network" "private_vpc" {
     name = var.vpc_name
@@ -44,8 +44,21 @@ resource "google_compute_firewall" "private_vpc_firewall" {
 
     allow {
       protocol = var.webapp_firewall_protocol
-      ports = var.webapp_firewall_protocol_ports
+      ports = var.webapp_firewall_protocol_allow_ports
     }
+    source_tags = var.webapp_firewall_source_tags
+    target_tags = var.webapp_firewall_target_tags
+}
+
+resource "google_compute_firewall" "private_vpc_firewall1" {
+    name = var.webapp_firewall_ssh
+    network = google_compute_network.private_vpc.name
+
+    deny {
+      protocol = var.webapp_firewall_protocol
+      ports = var.webapp_firewall_protocol_deny_ports
+    }
+
     source_tags = var.webapp_firewall_source_tags
     target_tags = var.webapp_firewall_target_tags
 }
