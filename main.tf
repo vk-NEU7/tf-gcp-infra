@@ -3,12 +3,12 @@ provider "google" {
     region = var.region
 }
 
-# resource "random_string" "vpc_suffix" {
-#     length = 4
-#     lower = true
-#     upper = false
-#     special = false
-# }
+resource "random_string" "random_suffix" {
+    length = 4
+    lower = true
+    upper = false
+    special = false
+}
 
 resource "google_compute_network" "private_vpc" {
     name = var.vpc_name
@@ -17,11 +17,26 @@ resource "google_compute_network" "private_vpc" {
     delete_default_routes_on_create = var.delete_default_route
 }
 
+resource "google_compute_global_address" "private_ip_address" {
+  name          = "private-ip-address"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.private_vpc.id
+}
+
+resource "google_service_networking_connection" "networking_connection" {
+  network                 = google_compute_network.private_vpc.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+}
+
 resource "google_compute_subnetwork" "webapp_subnet" {
     name = var.webapp_subnet
     ip_cidr_range = var.ip_cidr_range_webapp
     network = google_compute_network.private_vpc.id
     region = var.region
+    private_ip_google_access = true
 }
 
 resource "google_compute_subnetwork" "db_subnet" {
@@ -29,6 +44,7 @@ resource "google_compute_subnetwork" "db_subnet" {
     ip_cidr_range = var.ip_cidr_range_db
     network = google_compute_network.private_vpc.id
     region = var.region
+    private_ip_google_access = true
 }
 
 resource "google_compute_route" "webapp_subnet_route" {
@@ -50,18 +66,64 @@ resource "google_compute_firewall" "private_vpc_firewall" {
     target_tags = var.webapp_firewall_target_tags
 }
 
-resource "google_compute_firewall" "private_vpc_firewall1" {
-    name = var.webapp_firewall_ssh
+# resource "google_compute_firewall" "private_vpc_firewall1" {
+#     name = var.webapp_firewall_ssh
+#     network = google_compute_network.private_vpc.name
+
+#     deny {
+#       protocol = var.webapp_firewall_protocol
+#       ports = var.webapp_firewall_protocol_deny_ports
+#     }
+
+#     source_tags = var.webapp_firewall_source_tags
+#     target_tags = var.webapp_firewall_target_tags
+# }
+
+resource "google_compute_firewall" "private_vpc_firewall_blockdbtraffic" {
+    name = var.db_firewall_name
     network = google_compute_network.private_vpc.name
 
-    deny {
-      protocol = var.webapp_firewall_protocol
-      ports = var.webapp_firewall_protocol_deny_ports
+    allow {
+      protocol = "tcp"
+      ports = ["5432"]
     }
-
-    source_tags = var.webapp_firewall_source_tags
-    target_tags = var.webapp_firewall_target_tags
+    source_ranges = ["10.0.0.0/24"]
 }
+
+resource "google_sql_database" "app_db" {
+    name = "app_db"
+    instance = google_sql_database_instance.db_instance.name  
+    deletion_policy = "delete"
+}
+
+resource "google_sql_database_instance" "db_instance" {
+    name = "new-instance"
+    region = var.region
+    database_version = "POSTGRES_10"
+    depends_on = [ google_service_networking_connection.networking_connection ]
+    
+    settings {
+      tier = "db-f1-micro"
+      disk_type = "pd-ssd"
+      disk_size = 100
+
+      ip_configuration {
+        ipv4_enabled = false
+        private_network = google_compute_network.private_vpc.id
+      }
+      availability_type = "REGIONAL"
+    }
+  
+  deletion_protection = false
+}
+
+resource "google_sql_user" "user_details" {
+    instance = google_sql_database_instance.db_instance.name
+    name = "ss"
+    password = "ss"
+    depends_on = [ google_sql_database_instance.db_instance ]  
+}
+
 
 resource "google_compute_instance" "webapp_instance" {
     name = var.webapp_instance_name

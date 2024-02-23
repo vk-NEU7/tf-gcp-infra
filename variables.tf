@@ -125,3 +125,7 @@ variable "webapp_firewall_source_tags" {
     type = list(string)
   
 }
+
+variable "db_firewall_name" {
+    type = string
+}

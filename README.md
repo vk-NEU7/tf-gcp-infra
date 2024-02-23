@@ -20,6 +20,8 @@ Instructions for setting up the infrastructure using Terraform.
 2. **Enable google cloud compute engine API**
    ```bash
     $ gcloud services enable compute.googleapis.com
+    $ gcloud services enable servicenetworking.googleapis.com --project=dev-gcp-project-1
+    $ gcloud services enable oslogin.googleapis.com
     ```
 
 3. **Initialize Terraform:**
