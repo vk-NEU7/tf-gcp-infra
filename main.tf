@@ -87,7 +87,7 @@ resource "google_compute_firewall" "private_vpc_firewall_blockdbtraffic" {
       protocol = "tcp"
       ports = ["5432"]
     }
-    source_ranges = ["10.0.0.0/24"]
+    source_ranges = ["10.1.0.0/24"]
 }
 
 resource "google_sql_database" "app_db" {
@@ -119,11 +119,14 @@ resource "google_sql_database_instance" "db_instance" {
 
 resource "google_sql_user" "user_details" {
     instance = google_sql_database_instance.db_instance.name
-    name = "ss"
-    password = "ss"
+    name = var.db_user
+    password = var.db_password
     depends_on = [ google_sql_database_instance.db_instance ]  
 }
 
+output "db_private_ip" {
+  value = "${google_sql_database_instance.db_instance.private_ip_address}"
+}
 
 resource "google_compute_instance" "webapp_instance" {
     name = var.webapp_instance_name
@@ -146,4 +149,16 @@ resource "google_compute_instance" "webapp_instance" {
         network_tier = var.webapp_instance_networktier
       }
     }
+
+    metadata_startup_script = <<-EOT
+    #!/bin/bash
+    touch /tmp/.env
+    sudo echo "DB=${google_sql_database_instance.db_instance.private_ip_address}" >> /tmp/.env
+    sudo echo "DB_USER=${var.db_user}" >> /tmp/.env
+    sudo echo "DB_PASSWORD=${var.db_password}" >> /tmp/.env
+    # sudo mv /tmp/.env /opt/webapp/
+    # sudo chmod 750 /opt/webapp/.env
+    # sudo chown csye6225:csye6225 /opt/webapp/.env
+    
+    EOT
 }

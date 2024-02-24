@@ -129,3 +129,11 @@ variable "webapp_firewall_source_tags" {
 variable "db_firewall_name" {
     type = string
 }
+
+variable "db_user" {
+    type = string
+}
+
+variable "db_password" {
+    type = string
+}
