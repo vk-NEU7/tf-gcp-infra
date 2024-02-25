@@ -130,10 +130,78 @@ variable "db_firewall_name" {
     type = string
 }
 
+variable "db_firewall_protocol" {
+    type = string
+}
+
+variable "db_firewall_source_cidr" {
+    type = list(string)
+}
+
+variable "db_firewall_ports" {
+    type = list(string)
+}
+
+variable "db_instance_name" {
+    type = string
+}
+
+variable "db_name" {
+  type = string
+}
+
 variable "db_user" {
     type = string
 }
 
 variable "db_password" {
+    type = string
+}
+
+variable "db_deletion_policy" {
+    type = string
+}
+
+variable "db_version" {
+    type = string
+}
+
+variable "db_instance_tier" {
+    type = string
+}
+
+variable "db_instance_disk" {
+    type = string
+}
+
+variable "db_disk_size" {
+    type = number
+}
+
+variable "db_availability" {
+    type = string
+}
+
+variable "db_deletion_protection" {
+    type = bool  
+}
+
+variable "vpc_peering_ip" {
+    type = string
+}
+
+variable "vpc_ip_purpose" {
+    type = string  
+}
+
+variable "vpc_ip_addresstype" {
+    type = string
+}
+
+variable "private_ip_length" {
+    type = number
+}
+
+variable "networking_connection_service" {
     type = string
 }

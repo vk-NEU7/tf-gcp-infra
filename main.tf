@@ -18,16 +18,16 @@ resource "google_compute_network" "private_vpc" {
 }
 
 resource "google_compute_global_address" "private_ip_address" {
-  name          = "private-ip-address"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
+  name          = var.vpc_peering_ip
+  purpose       = var.vpc_ip_purpose
+  address_type  = var.vpc_ip_addresstype
+  prefix_length = var.private_ip_length
   network       = google_compute_network.private_vpc.id
 }
 
 resource "google_service_networking_connection" "networking_connection" {
   network                 = google_compute_network.private_vpc.id
-  service                 = "servicenetworking.googleapis.com"
+  service                 = var.networking_connection_service
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
 }
 
@@ -84,37 +84,37 @@ resource "google_compute_firewall" "private_vpc_firewall_blockdbtraffic" {
     network = google_compute_network.private_vpc.name
 
     allow {
-      protocol = "tcp"
-      ports = ["5432"]
+      protocol = var.db_firewall_protocol
+      ports = var.db_firewall_ports
     }
-    source_ranges = ["10.1.0.0/24"]
+    source_ranges = var.db_firewall_source_cidr
 }
 
 resource "google_sql_database" "app_db" {
-    name = "app_db"
+    name = var.db_name
     instance = google_sql_database_instance.db_instance.name  
-    deletion_policy = "delete"
+    deletion_policy = var.db_deletion_policy
 }
 
 resource "google_sql_database_instance" "db_instance" {
-    name = "new-instance"
+    name = var.db_instance_name
     region = var.region
-    database_version = "POSTGRES_10"
+    database_version = var.db_version
     depends_on = [ google_service_networking_connection.networking_connection ]
     
     settings {
-      tier = "db-f1-micro"
-      disk_type = "pd-ssd"
-      disk_size = 100
+      tier = var.db_instance_tier
+      disk_type = var.db_instance_disk
+      disk_size = var.db_disk_size
 
       ip_configuration {
         ipv4_enabled = false
         private_network = google_compute_network.private_vpc.id
       }
-      availability_type = "REGIONAL"
+      availability_type = var.db_availability
     }
   
-  deletion_protection = false
+  deletion_protection = var.db_deletion_protection
 }
 
 resource "google_sql_user" "user_details" {
@@ -152,13 +152,16 @@ resource "google_compute_instance" "webapp_instance" {
 
     metadata_startup_script = <<-EOT
     #!/bin/bash
-    touch /tmp/.env
-    sudo echo "DB=${google_sql_database_instance.db_instance.private_ip_address}" >> /tmp/.env
-    sudo echo "DB_USER=${var.db_user}" >> /tmp/.env
-    sudo echo "DB_PASSWORD=${var.db_password}" >> /tmp/.env
-    # sudo mv /tmp/.env /opt/webapp/
-    # sudo chmod 750 /opt/webapp/.env
-    # sudo chown csye6225:csye6225 /opt/webapp/.env
-    
+    touch /tmp/application.properties
+    sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /tmp/application.properties
+    sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /tmp/application.properties
+    sudo echo "spring.datasource.username=${var.db_user}" >> /tmp/application.properties
+    sudo echo "spring.datasource.password=${var.db_password}" >> /tmp/application.properties
+    sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /tmp/application.properties
+    sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /tmp/application.properties
+    sudo mv /tmp/application.properties /opt/webapp/
+    sudo chmod 750 /opt/webapp/application.properties
+    sudo chown csye6225:csye6225 /opt/webapp/application.properties
+    sudo systemctl start webapp.service
     EOT
 }
