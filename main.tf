@@ -10,6 +10,12 @@ resource "random_string" "random_suffix" {
     special = false
 }
 
+resource "random_password" "password" {
+  length           = 8
+  special          = true
+  override_special = "-@&4"
+}
+
 resource "google_compute_network" "private_vpc" {
     name = var.vpc_name
     auto_create_subnetworks = var.auto_create_subnets
@@ -29,6 +35,7 @@ resource "google_service_networking_connection" "networking_connection" {
   network                 = google_compute_network.private_vpc.id
   service                 = var.networking_connection_service
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+  deletion_policy = var.deletion_policy_abandon
 }
 
 resource "google_compute_subnetwork" "webapp_subnet" {
@@ -66,18 +73,18 @@ resource "google_compute_firewall" "private_vpc_firewall" {
     target_tags = var.webapp_firewall_target_tags
 }
 
-# resource "google_compute_firewall" "private_vpc_firewall1" {
-#     name = var.webapp_firewall_ssh
-#     network = google_compute_network.private_vpc.name
+resource "google_compute_firewall" "private_vpc_firewall1" {
+    name = var.webapp_firewall_ssh
+    network = google_compute_network.private_vpc.name
 
-#     deny {
-#       protocol = var.webapp_firewall_protocol
-#       ports = var.webapp_firewall_protocol_deny_ports
-#     }
+    deny {
+      protocol = var.webapp_firewall_protocol
+      ports = var.webapp_firewall_protocol_deny_ports
+    }
 
-#     source_tags = var.webapp_firewall_source_tags
-#     target_tags = var.webapp_firewall_target_tags
-# }
+    source_tags = var.webapp_firewall_source_tags
+    target_tags = var.webapp_firewall_target_tags
+}
 
 resource "google_compute_firewall" "private_vpc_firewall_blockdbtraffic" {
     name = var.db_firewall_name
@@ -120,7 +127,8 @@ resource "google_sql_database_instance" "db_instance" {
 resource "google_sql_user" "user_details" {
     instance = google_sql_database_instance.db_instance.name
     name = var.db_user
-    password = var.db_password
+    password = random_password.password.result
+    deletion_policy = var.deletion_policy_abandon
     depends_on = [ google_sql_database_instance.db_instance ]  
 }
 
@@ -156,7 +164,7 @@ resource "google_compute_instance" "webapp_instance" {
     sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /tmp/application.properties
     sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /tmp/application.properties
     sudo echo "spring.datasource.username=${var.db_user}" >> /tmp/application.properties
-    sudo echo "spring.datasource.password=${var.db_password}" >> /tmp/application.properties
+    sudo echo "spring.datasource.password=${random_password.password.result}" >> /tmp/application.properties
     sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /tmp/application.properties
     sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /tmp/application.properties
     sudo mv /tmp/application.properties /opt/webapp/

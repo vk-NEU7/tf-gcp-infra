@@ -205,3 +205,7 @@ variable "private_ip_length" {
 variable "networking_connection_service" {
     type = string
 }
+
+variable "deletion_policy_abandon" {
+    type = string
+}
