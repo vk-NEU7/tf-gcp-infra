@@ -170,6 +170,5 @@ resource "google_compute_instance" "webapp_instance" {
     sudo mv /tmp/application.properties /opt/webapp/
     sudo chmod 750 /opt/webapp/application.properties
     sudo chown csye6225:csye6225 /opt/webapp/application.properties
-    sudo systemctl start webapp.service
     EOT
 }
