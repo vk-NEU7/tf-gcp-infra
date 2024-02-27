@@ -160,15 +160,12 @@ resource "google_compute_instance" "webapp_instance" {
 
     metadata_startup_script = <<-EOT
     #!/bin/bash
-    touch /tmp/application.properties
-    sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /tmp/application.properties
-    sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /tmp/application.properties
-    sudo echo "spring.datasource.username=${var.db_user}" >> /tmp/application.properties
-    sudo echo "spring.datasource.password=${random_password.password.result}" >> /tmp/application.properties
-    sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /tmp/application.properties
-    sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /tmp/application.properties
-    sudo mv /tmp/application.properties /opt/webapp/
-    sudo chmod 750 /opt/webapp/application.properties
-    sudo chown csye6225:csye6225 /opt/webapp/application.properties
+    sudo truncate -s 0 /opt/webapp/application.properties
+    sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /opt/webapp/application.properties
+    sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /opt/webapp/application.properties
+    sudo echo "spring.datasource.username=${var.db_user}" >> /opt/webapp/application.properties
+    sudo echo "spring.datasource.password=${random_password.password.result}" >> /opt/webapp/application.properties
+    sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /opt/webapp/application.properties
+    sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /opt/webapp/application.properties
     EOT
 }
