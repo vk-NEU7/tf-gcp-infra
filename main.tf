@@ -169,3 +169,17 @@ resource "google_compute_instance" "webapp_instance" {
     sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /opt/webapp/application.properties
     EOT
 }
+
+data "google_dns_managed_zone" "webapp_zone" {
+  name = "webapp-zone"
+}
+
+resource "google_dns_record_set" "zone_instance" {
+  name = data.google_dns_managed_zone.webapp_zone.dns_name
+  managed_zone = data.google_dns_managed_zone.webapp_zone.name
+  type = "A"
+  ttl = 300
+  rrdatas = [
+    google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
+  ]
+}
