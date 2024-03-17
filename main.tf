@@ -16,6 +16,9 @@ resource "random_password" "password" {
   override_special = "-@&4"
 }
 
+data "google_project" "project-id" {
+}
+
 resource "google_compute_network" "private_vpc" {
     name = var.vpc_name
     auto_create_subnetworks = var.auto_create_subnets
@@ -136,12 +139,39 @@ output "db_private_ip" {
   value = "${google_sql_database_instance.db_instance.private_ip_address}"
 }
 
+resource "google_service_account" "webapp_instance_service_account" {
+  account_id = "webapp-service-account"
+  display_name = "webapp-instance-account"
+}
+
+resource "google_project_iam_binding" "webapp_logging_binding" {
+  project = data.google_project.project-id.project_id
+  role = "roles/logging.admin"
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
+resource "google_project_iam_binding" "webapp_monitoring_binding" {
+  project = data.google_project.project-id.project_id
+  role = "roles/monitoring.metricWriter"
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
 resource "google_compute_instance" "webapp_instance" {
     name = var.webapp_instance_name
     machine_type = var.webapp_instance_type
     zone = var.zone
 
     tags = var.webapp_instance_tags
+    allow_stopping_for_update = true
+
+    service_account {
+      email = google_service_account.webapp_instance_service_account.email
+      scopes = ["https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write"]
+    }
     boot_disk {
         initialize_params {
           image = var.webapp_instance_image
