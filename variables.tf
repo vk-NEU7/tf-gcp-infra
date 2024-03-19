@@ -209,3 +209,35 @@ variable "networking_connection_service" {
 variable "deletion_policy_abandon" {
     type = string
 }
+
+variable "webapp_instance_service_accountid" {
+  type = string
+}
+
+variable "webapp_instance_service_accountname" {
+    type = string
+}
+
+variable "logging_admin_binding" {
+    type = string
+}
+
+variable "webapp_monitoring_binding" {
+    type = string
+
+}
+
+variable "webapp_instance_scopes" {
+    type = list(string)
+}
+variable "dns_zone_webapp" {
+    type = string
+}
+
+variable "dns_record_webapp_A" {
+    type = string
+}
+
+variable "dns_record_webapp_A_ttl" {
+    type = number
+}

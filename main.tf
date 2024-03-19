@@ -140,13 +140,13 @@ output "db_private_ip" {
 }
 
 resource "google_service_account" "webapp_instance_service_account" {
-  account_id = "webapp-service-account"
-  display_name = "webapp-instance-account"
+  account_id = var.webapp_instance_service_accountid
+  display_name = var.webapp_instance_service_accountname
 }
 
 resource "google_project_iam_binding" "webapp_logging_binding" {
   project = data.google_project.project-id.project_id
-  role = "roles/logging.admin"
+  role = var.logging_admin_binding
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
   ]
@@ -154,7 +154,7 @@ resource "google_project_iam_binding" "webapp_logging_binding" {
 
 resource "google_project_iam_binding" "webapp_monitoring_binding" {
   project = data.google_project.project-id.project_id
-  role = "roles/monitoring.metricWriter"
+  role = var.webapp_monitoring_binding
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
   ]
@@ -170,7 +170,7 @@ resource "google_compute_instance" "webapp_instance" {
 
     service_account {
       email = google_service_account.webapp_instance_service_account.email
-      scopes = ["https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write"]
+      scopes = var.webapp_instance_scopes
     }
     boot_disk {
         initialize_params {
@@ -201,14 +201,14 @@ resource "google_compute_instance" "webapp_instance" {
 }
 
 data "google_dns_managed_zone" "webapp_zone" {
-  name = "webapp-zone"
+  name = var.dns_zone_webapp
 }
 
 resource "google_dns_record_set" "zone_instance" {
   name = data.google_dns_managed_zone.webapp_zone.dns_name
   managed_zone = data.google_dns_managed_zone.webapp_zone.name
-  type = "A"
-  ttl = 300
+  type = var.dns_record_webapp_A
+  ttl = var.dns_record_webapp_A_ttl
   rrdatas = [
     google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
   ]
