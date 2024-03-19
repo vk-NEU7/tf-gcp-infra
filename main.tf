@@ -168,6 +168,7 @@ resource "google_compute_instance" "webapp_instance" {
     tags = var.webapp_instance_tags
     allow_stopping_for_update = true
 
+    depends_on = [google_service_account.webapp_instance_service_account, google_project_iam_binding.webapp_logging_binding, google_project_iam_binding.webapp_monitoring_binding]
     service_account {
       email = google_service_account.webapp_instance_service_account.email
       scopes = var.webapp_instance_scopes
