@@ -57,6 +57,7 @@ resource "google_compute_subnetwork" "db_subnet" {
     private_ip_google_access = true
 }
 
+
 resource "google_compute_route" "webapp_subnet_route" {
     name = var.webapp_subnet_route
     network = google_compute_network.private_vpc.id
@@ -160,6 +161,23 @@ resource "google_project_iam_binding" "webapp_monitoring_binding" {
   ]
 }
 
+resource "google_project_iam_binding" "webapp_pubsub_iam_binding" {
+  project = data.google_project.project-id.project_id
+  role = "roles/pubsub.admin"
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ] 
+}
+
+
+resource "google_pubsub_subscription_iam_binding" "webapp_pubsub_binding" {
+  subscription = "test-subscription"
+  role = "roles/pubsub.admin"
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
 resource "google_compute_instance" "webapp_instance" {
     name = var.webapp_instance_name
     machine_type = var.webapp_instance_type
@@ -168,7 +186,10 @@ resource "google_compute_instance" "webapp_instance" {
     tags = var.webapp_instance_tags
     allow_stopping_for_update = true
 
-    depends_on = [google_service_account.webapp_instance_service_account, google_project_iam_binding.webapp_logging_binding, google_project_iam_binding.webapp_monitoring_binding]
+    depends_on = [google_service_account.webapp_instance_service_account, 
+    google_project_iam_binding.webapp_logging_binding, 
+    google_project_iam_binding.webapp_monitoring_binding,
+    google_pubsub_subscription_iam_binding.webapp_pubsub_binding]
     service_account {
       email = google_service_account.webapp_instance_service_account.email
       scopes = var.webapp_instance_scopes
