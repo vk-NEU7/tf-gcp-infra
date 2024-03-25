@@ -241,3 +241,11 @@ variable "dns_record_webapp_A" {
 variable "dns_record_webapp_A_ttl" {
     type = number
 }
+
+variable "mailgun_api_key" {
+    type = string
+}
+
+variable "mailgun_email" {
+    type = string
+}

@@ -294,10 +294,14 @@ resource "google_cloudfunctions2_function" "lambda_function" {
   location = "us-east1"
   description = "pubsub trigger function"
 
-  depends_on = [ google_vpc_access_connector.serverless-vpc-connector ]
+  depends_on = [ google_vpc_access_connector.serverless-vpc-connector,
+  google_sql_database_instance.db_instance ]
   build_config {
     runtime = "java17"
     entry_point = "gcfv2pubsub.PubSubFunction"
+    environment_variables = {
+        BUILD_CONFIG_TEST = "build_test"
+    }
 
     source {
       storage_source {
@@ -315,7 +319,12 @@ resource "google_cloudfunctions2_function" "lambda_function" {
     max_instance_request_concurrency = 10
     available_cpu = "2"
     service_account_email = google_service_account.webapp_instance_service_account.email
-
+    environment_variables = {
+      db_ip = "${google_sql_database_instance.db_instance.private_ip_address}"
+      password = "${random_password.password.result}"
+      mailgun_email = var.mailgun_email
+      api_key = var.mailgun_api_key
+    }
     vpc_connector = "projects/${data.google_project.project-id.project_id}/locations/${var.region}/connectors/${google_vpc_access_connector.serverless-vpc-connector.name}"
     vpc_connector_egress_settings = "PRIVATE_RANGES_ONLY"
   }
