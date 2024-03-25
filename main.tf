@@ -90,6 +90,26 @@ resource "google_compute_firewall" "private_vpc_firewall1" {
     target_tags = var.webapp_firewall_target_tags
 }
 
+resource "google_compute_firewall" "private_vpc_firewall2" {
+  name = "smtp-firewall"
+  network = google_compute_network.private_vpc.name
+
+  allow {
+    ports = ["587"]
+    protocol = "tcp"
+  }
+
+  direction = "EGRESS"
+
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  destination_ranges = ["0.0.0.0/0"]
+  
+}
+
 resource "google_compute_firewall" "private_vpc_firewall_blockdbtraffic" {
     name = var.db_firewall_name
     network = google_compute_network.private_vpc.name
@@ -117,6 +137,11 @@ resource "google_sql_database_instance" "db_instance" {
       tier = var.db_instance_tier
       disk_type = var.db_instance_disk
       disk_size = var.db_disk_size
+
+      database_flags {
+        name  = "max_connections"
+        value = "500"
+      }
 
       ip_configuration {
         ipv4_enabled = false
@@ -234,4 +259,80 @@ resource "google_dns_record_set" "zone_instance" {
   rrdatas = [
     google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
   ]
+}
+
+resource "google_pubsub_topic" "pubsub_topic" {
+  name                       = "new-topic"
+  message_retention_duration = "604800s"  # Set retention for 7 days
+}
+
+resource "google_pubsub_subscription" "pubsub_subscription" {
+  name = "new-subscription"
+  topic = google_pubsub_topic.pubsub_topic.id
+
+  ack_deadline_seconds = 100
+ 
+}
+
+resource "google_storage_bucket" "bucket" {
+  name     = "new-bucket009211"
+  location = "US"
+  uniform_bucket_level_access = false
+}
+
+
+
+resource "google_storage_bucket_object" "function_object" {
+  name = "function-source1.zip"
+  bucket = google_storage_bucket.bucket.name
+  source = "/Users/vinaykumarchelpuri/Documents/workingzip/function-source.zip"
+}
+
+
+resource "google_cloudfunctions2_function" "lambda_function" {
+  name = "gcp-function"
+  location = "us-east1"
+  description = "pubsub trigger function"
+
+  depends_on = [ google_vpc_access_connector.serverless-vpc-connector ]
+  build_config {
+    runtime = "java17"
+    entry_point = "gcfv2pubsub.PubSubFunction"
+
+    source {
+      storage_source {
+        bucket = google_storage_bucket.bucket.name
+        object = google_storage_bucket_object.function_object.name
+      }
+    }
+  }
+
+  service_config {
+    min_instance_count = 0
+    max_instance_count = 1
+    available_memory = "2Gi"
+    timeout_seconds = 60
+    max_instance_request_concurrency = 10
+    available_cpu = "2"
+    service_account_email = google_service_account.webapp_instance_service_account.email
+
+    vpc_connector = "projects/${data.google_project.project-id.project_id}/locations/${var.region}/connectors/${google_vpc_access_connector.serverless-vpc-connector.name}"
+    vpc_connector_egress_settings = "PRIVATE_RANGES_ONLY"
+  }
+
+  event_trigger {
+    trigger_region = "us-east1"
+    event_type = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = google_pubsub_topic.pubsub_topic.id
+    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
+  }
+  
+}
+
+resource "google_vpc_access_connector" "serverless-vpc-connector" {
+  project = data.google_project.project-id.project_id
+  name = "serverless-vpc"
+  region = "us-east1"
+  network = google_compute_network.private_vpc.name
+  ip_cidr_range = "192.168.8.0/28"
 }
