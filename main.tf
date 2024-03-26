@@ -320,7 +320,7 @@ resource "google_cloudfunctions2_function" "lambda_function" {
     timeout_seconds = 60
     max_instance_request_concurrency = 10
     available_cpu = "2"
-    service_account_email = google_service_account.webapp_instance_service_account.email
+    service_account_email = google_service_account.cloud_function_service_account.email
     environment_variables = {
       db_ip = "${google_sql_database_instance.db_instance.private_ip_address}"
       password = "${random_password.password.result}"
@@ -346,4 +346,60 @@ resource "google_vpc_access_connector" "serverless-vpc-connector" {
   region = "us-east1"
   network = google_compute_network.private_vpc.name
   ip_cidr_range = "192.168.8.0/28"
+}
+
+resource "google_service_account" "cloud_function_service_account" {
+  account_id = "cloud-fun-service-account"
+  display_name = "cloud-fun-account" 
+}
+
+# resource "google_cloudfunctions_function_iam_binding" "iam_binding_cloudfunction_role1" {
+#   project = google_cloudfunctions2_function.lambda_function1.project
+#   region = var.region
+#   cloud_function = google_cloudfunctions2_function.lambda_function1.name
+#   role = "roles/iam.serviceAccountUser"
+#   members = [
+#     "serviceAccount:${google_service_account.cloud_function_service_account.email}"
+#   ]
+# }
+
+# resource "google_cloudfunctions_function_iam_binding" "iam_binding_cloudfunction_role2" {
+#   project = google_cloudfunctions2_function.lambda_function1.project
+#   region = var.region
+#   cloud_function = google_cloudfunctions2_function.lambda_function1.name
+#   role = "roles/cloudfunctions.admin"
+#   members = [
+#     "serviceAccount:${google_service_account.cloud_function_service_account.email}"
+#   ]
+# }
+
+resource "google_pubsub_subscription_iam_binding" "cloudfunction_pubsub_subscriber_binding" {
+  subscription = "test-subscription"
+  role = "roles/pubsub.subscriber"
+  members = [
+    "serviceAccount:${google_service_account.cloud_function_service_account.email}"
+  ]
+}
+
+resource "google_pubsub_topic_iam_binding" "pubsubtopic_service_account_binding" {
+  project = google_pubsub_topic.pubsub_topic.project
+  topic = google_pubsub_topic.pubsub_topic.name
+  role = "roles/pubsub.publisher"
+  members = [
+    "serviceAccount:${google_service_account.cloud_function_service_account.email}"
+  ]
+}
+
+resource "google_project_iam_binding" "iam_binding_invoker" {
+  project = data.google_project.project-id.project_id
+  role = "roles/run.invoker"
+  members = [
+    "serviceAccount:${google_service_account.cloud_function_service_account.email}"
+  ] 
+}
+
+resource "google_service_account_iam_member" "iam_service_accountuser" {
+  service_account_id = google_service_account.cloud_function_service_account.id
+  role = "roles/iam.serviceAccountUser"
+  member = google_service_account.cloud_function_service_account.member
 }
