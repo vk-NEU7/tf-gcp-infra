@@ -249,3 +249,75 @@ variable "mailgun_api_key" {
 variable "mailgun_email" {
     type = string
 }
+
+variable "pubSub_topic_name" {
+    type = string
+}
+
+variable "environment_name" {
+    type = string
+}
+
+variable "messge_retention_dur" {
+    type = string
+}
+
+variable "pubsub_subscription_name" {
+    type = string
+}
+
+variable "msg_acknowledge_deadline" {
+    type = number
+}
+
+variable "bucket_name" {
+    type = string
+}
+
+variable "bucket_location" {
+    type = string
+}
+
+variable "bucket_uniform_access_level" {
+    type = bool
+}
+
+variable "bucket_object_name" {
+    type = string
+}
+
+variable "cloud_function_source" {
+    type = string
+}
+
+variable "cloud_function_name" {
+    type = string
+}
+
+variable "cloud_function_description" {
+    type = string
+}
+
+variable "cloud_function_runtime" {
+    type = string
+}
+
+variable "cloud_function_entrypoint" {
+    type = string
+}
+
+variable "build_test_config" {
+    type = string
+}
+
+variable "cloud_function_instance_mincount" {
+    type = number
+}
+
+variable "cloud_function_instance_maxcount" {
+    type = number
+}
+
+variable "cloud_function_instance_memory" {
+    type = string
+}

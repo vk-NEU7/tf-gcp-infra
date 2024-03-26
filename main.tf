@@ -244,6 +244,8 @@ resource "google_compute_instance" "webapp_instance" {
     sudo echo "spring.datasource.password=${random_password.password.result}" >> /opt/webapp/application.properties
     sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /opt/webapp/application.properties
     sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /opt/webapp/application.properties
+    sudo echo "topic-name=${var.pubSub_topic_name}" >> /opt/webapp/application.properties
+    sudo echo "environment=${var.environment_name}" >> /opt/webapp/application.properties
     EOT
 }
 
@@ -262,45 +264,45 @@ resource "google_dns_record_set" "zone_instance" {
 }
 
 resource "google_pubsub_topic" "pubsub_topic" {
-  name                       = "new-topic"
-  message_retention_duration = "604800s"  # Set retention for 7 days
+  name                       = var.pubSub_topic_name
+  message_retention_duration = var.messge_retention_dur  # Set retention for 7 days
 }
 
 resource "google_pubsub_subscription" "pubsub_subscription" {
-  name = "new-subscription"
+  name = var.pubsub_subscription_name
   topic = google_pubsub_topic.pubsub_topic.id
 
-  ack_deadline_seconds = 100
+  ack_deadline_seconds = var.msg_acknowledge_deadline
  
 }
 
 resource "google_storage_bucket" "bucket" {
-  name     = "new-bucket009211"
-  location = "US"
-  uniform_bucket_level_access = false
+  name     = var.bucket_name
+  location = var.bucket_location
+  uniform_bucket_level_access = var.bucket_uniform_access_level
 }
 
 
 
 resource "google_storage_bucket_object" "function_object" {
-  name = "function-source1.zip"
+  name = var.bucket_object_name
   bucket = google_storage_bucket.bucket.name
-  source = "/Users/vinaykumarchelpuri/Documents/workingzip/function-source.zip"
+  source = var.cloud_function_source
 }
 
 
 resource "google_cloudfunctions2_function" "lambda_function" {
-  name = "gcp-function"
-  location = "us-east1"
-  description = "pubsub trigger function"
+  name = var.cloud_function_name
+  location = var.region
+  description = var.cloud_function_description
 
   depends_on = [ google_vpc_access_connector.serverless-vpc-connector,
   google_sql_database_instance.db_instance ]
   build_config {
-    runtime = "java17"
-    entry_point = "gcfv2pubsub.PubSubFunction"
+    runtime = var.cloud_function_runtime
+    entry_point = var.cloud_function_entrypoint
     environment_variables = {
-        BUILD_CONFIG_TEST = "build_test"
+        BUILD_CONFIG_TEST = var.build_test_config
     }
 
     source {
@@ -312,9 +314,9 @@ resource "google_cloudfunctions2_function" "lambda_function" {
   }
 
   service_config {
-    min_instance_count = 0
-    max_instance_count = 1
-    available_memory = "2Gi"
+    min_instance_count = var.cloud_function_instance_mincount
+    max_instance_count = var.cloud_function_instance_maxcount
+    available_memory = var.cloud_function_instance_memory
     timeout_seconds = 60
     max_instance_request_concurrency = 10
     available_cpu = "2"
