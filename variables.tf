@@ -321,3 +321,116 @@ variable "cloud_function_instance_maxcount" {
 variable "cloud_function_instance_memory" {
     type = string
 }
+
+variable "db_instance_flag" {
+    type = string
+}
+
+variable "db_instance_connections" {
+    type = number
+}
+
+variable "webapp_pubsub_iam_binding_role" {
+    type = string
+}
+
+variable "webapp_pubsub_binding_subscription" {
+    type = string
+}
+
+variable "webapp_pubsub_binding_subscription_role" {
+    type = string
+}
+
+variable "cloud_function_timeout" {
+    type = number
+}
+
+variable "max_instance_request_concurrency_limit" {
+    type = number
+}
+
+variable "available_cpu" {
+    type = string
+}
+
+variable "vpc_connector_egress_settings" {
+    type = string
+}
+
+variable "trigger_region" {
+    type = string
+}
+
+variable "event_type_cloudfunction" {
+    type = string
+}
+
+variable "retry_policy_event" {
+    type = string
+}
+
+variable "serverless-vpc-connector-name" {
+    type = string
+}
+
+variable "ip_cidr_range_serverless" {
+    type = string
+}
+variable "cloud_function_service_account_name" {
+    type = string
+}
+
+variable "cloud_function_service_account_id" {
+    type = string
+}
+
+variable "cloudfunction_pubsub_subscriber_binding_role" {
+    type = string
+  
+}
+
+variable "pubsubtopic_service_account_binding_role" {
+    type = string
+}
+
+variable "iam_binding_invoker_role" {
+    type = string
+  
+}
+
+variable "iam_service_accountuser_role" {
+    type = string
+}
+
+variable "private_vpc_firewall2_name" {
+    type = string
+  
+}
+
+variable "SMTP_allow_ports" {
+    type = list(string)
+  
+}
+
+variable "SMTP_allow_protocols" {
+    type = string
+}
+
+variable "SMTP_direction" {
+    type = string
+}
+
+variable "SMTP_log" {
+    type = string
+}
+
+variable "SMTP_source_ranges" {
+    type = list(string)
+  
+}
+
+variable "SMTP_destination_ranges" {
+    type = list(string)
+  
+}

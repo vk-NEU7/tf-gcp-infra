@@ -91,22 +91,22 @@ resource "google_compute_firewall" "private_vpc_firewall1" {
 }
 
 resource "google_compute_firewall" "private_vpc_firewall2" {
-  name = "smtp-firewall"
+  name = var.private_vpc_firewall2_name
   network = google_compute_network.private_vpc.name
 
   allow {
-    ports = ["587"]
-    protocol = "tcp"
+    ports = var.SMTP_allow_ports
+    protocol = var.SMTP_allow_protocols
   }
 
-  direction = "EGRESS"
+  direction = var.SMTP_direction
 
   log_config {
-    metadata = "INCLUDE_ALL_METADATA"
+    metadata = var.SMTP_log
   }
 
-  source_ranges = ["0.0.0.0/0"]
-  destination_ranges = ["0.0.0.0/0"]
+  source_ranges = var.SMTP_source_ranges
+  destination_ranges = var.SMTP_destination_ranges
   
 }
 
@@ -139,8 +139,8 @@ resource "google_sql_database_instance" "db_instance" {
       disk_size = var.db_disk_size
 
       database_flags {
-        name  = "max_connections"
-        value = "500"
+        name  = var.db_instance_flag
+        value = var.db_instance_connections
       }
 
       ip_configuration {
@@ -188,7 +188,7 @@ resource "google_project_iam_binding" "webapp_monitoring_binding" {
 
 resource "google_project_iam_binding" "webapp_pubsub_iam_binding" {
   project = data.google_project.project-id.project_id
-  role = "roles/pubsub.admin"
+  role = var.webapp_pubsub_iam_binding_role
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
   ] 
@@ -196,8 +196,8 @@ resource "google_project_iam_binding" "webapp_pubsub_iam_binding" {
 
 
 resource "google_pubsub_subscription_iam_binding" "webapp_pubsub_binding" {
-  subscription = "test-subscription"
-  role = "roles/pubsub.admin"
+  subscription = var.webapp_pubsub_binding_subscription
+  role = var.webapp_pubsub_binding_subscription_role
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
   ]
@@ -317,9 +317,9 @@ resource "google_cloudfunctions2_function" "lambda_function" {
     min_instance_count = var.cloud_function_instance_mincount
     max_instance_count = var.cloud_function_instance_maxcount
     available_memory = var.cloud_function_instance_memory
-    timeout_seconds = 60
-    max_instance_request_concurrency = 10
-    available_cpu = "2"
+    timeout_seconds = var.cloud_function_timeout
+    max_instance_request_concurrency = var.max_instance_request_concurrency_limit
+    available_cpu = var.available_cpu
     service_account_email = google_service_account.cloud_function_service_account.email
     environment_variables = {
       db_ip = "${google_sql_database_instance.db_instance.private_ip_address}"
@@ -328,29 +328,29 @@ resource "google_cloudfunctions2_function" "lambda_function" {
       api_key = var.mailgun_api_key
     }
     vpc_connector = "projects/${data.google_project.project-id.project_id}/locations/${var.region}/connectors/${google_vpc_access_connector.serverless-vpc-connector.name}"
-    vpc_connector_egress_settings = "PRIVATE_RANGES_ONLY"
+    vpc_connector_egress_settings = var.vpc_connector_egress_settings
   }
 
   event_trigger {
-    trigger_region = "us-east1"
-    event_type = "google.cloud.pubsub.topic.v1.messagePublished"
+    trigger_region = var.trigger_region
+    event_type = var.event_type_cloudfunction
     pubsub_topic = google_pubsub_topic.pubsub_topic.id
-    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
+    retry_policy = var.retry_policy_event
   }
   
 }
 
 resource "google_vpc_access_connector" "serverless-vpc-connector" {
   project = data.google_project.project-id.project_id
-  name = "serverless-vpc"
-  region = "us-east1"
+  name = var.serverless-vpc-connector-name
+  region = var.region
   network = google_compute_network.private_vpc.name
-  ip_cidr_range = "192.168.8.0/28"
+  ip_cidr_range = var.ip_cidr_range_serverless
 }
 
 resource "google_service_account" "cloud_function_service_account" {
-  account_id = "cloud-fun-service-account"
-  display_name = "cloud-fun-account" 
+  account_id = var.cloud_function_service_account_id
+  display_name = var.cloud_function_service_account_name
 }
 
 # resource "google_cloudfunctions_function_iam_binding" "iam_binding_cloudfunction_role1" {
@@ -373,18 +373,18 @@ resource "google_service_account" "cloud_function_service_account" {
 #   ]
 # }
 
-resource "google_pubsub_subscription_iam_binding" "cloudfunction_pubsub_subscriber_binding" {
-  subscription = "test-subscription"
-  role = "roles/pubsub.subscriber"
-  members = [
-    "serviceAccount:${google_service_account.cloud_function_service_account.email}"
-  ]
-}
+# resource "google_pubsub_subscription_iam_binding" "cloudfunction_pubsub_subscriber_binding" {
+#   subscription = var.pubsub_subscription_name
+#   role = var.cloudfunction_pubsub_subscriber_binding_role
+#   members = [
+#     "serviceAccount:${google_service_account.cloud_function_service_account.email}"
+#   ]
+# }
 
 resource "google_pubsub_topic_iam_binding" "pubsubtopic_service_account_binding" {
   project = google_pubsub_topic.pubsub_topic.project
   topic = google_pubsub_topic.pubsub_topic.name
-  role = "roles/pubsub.publisher"
+  role = var.pubsubtopic_service_account_binding_role
   members = [
     "serviceAccount:${google_service_account.cloud_function_service_account.email}"
   ]
@@ -392,7 +392,7 @@ resource "google_pubsub_topic_iam_binding" "pubsubtopic_service_account_binding"
 
 resource "google_project_iam_binding" "iam_binding_invoker" {
   project = data.google_project.project-id.project_id
-  role = "roles/run.invoker"
+  role = var.iam_binding_invoker_role
   members = [
     "serviceAccount:${google_service_account.cloud_function_service_account.email}"
   ] 
@@ -400,6 +400,6 @@ resource "google_project_iam_binding" "iam_binding_invoker" {
 
 resource "google_service_account_iam_member" "iam_service_accountuser" {
   service_account_id = google_service_account.cloud_function_service_account.id
-  role = "roles/iam.serviceAccountUser"
+  role = var.iam_service_accountuser_role
   member = google_service_account.cloud_function_service_account.member
 }
