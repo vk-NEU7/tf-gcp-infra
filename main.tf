@@ -74,7 +74,7 @@ resource "google_compute_firewall" "private_vpc_firewall" {
       ports = var.webapp_firewall_protocol_allow_ports
     }
     source_tags = var.webapp_firewall_source_tags
-    target_tags = var.webapp_firewall_target_tags
+    #target_tags = var.webapp_firewall_target_tags
 }
 
 resource "google_compute_firewall" "private_vpc_firewall1" {
@@ -203,65 +203,65 @@ resource "google_pubsub_subscription_iam_binding" "webapp_pubsub_binding" {
   ]
 }
 
-resource "google_compute_instance" "webapp_instance" {
-    name = var.webapp_instance_name
-    machine_type = var.webapp_instance_type
-    zone = var.zone
+# resource "google_compute_instance" "webapp_instance" {
+#     name = var.webapp_instance_name
+#     machine_type = var.webapp_instance_type
+#     zone = var.zone
 
-    tags = var.webapp_instance_tags
-    allow_stopping_for_update = true
+#     tags = var.webapp_instance_tags
+#     allow_stopping_for_update = true
 
-    depends_on = [google_service_account.webapp_instance_service_account, 
-    google_project_iam_binding.webapp_logging_binding, 
-    google_project_iam_binding.webapp_monitoring_binding,
-    google_pubsub_subscription_iam_binding.webapp_pubsub_binding]
-    service_account {
-      email = google_service_account.webapp_instance_service_account.email
-      scopes = var.webapp_instance_scopes
-    }
-    boot_disk {
-        initialize_params {
-          image = var.webapp_instance_image
-          size = var.webapp_instance_size
-          type = var.webapp_instance_bootdisk_type
-        }
-    }
+#     depends_on = [google_service_account.webapp_instance_service_account, 
+#     google_project_iam_binding.webapp_logging_binding, 
+#     google_project_iam_binding.webapp_monitoring_binding,
+#     google_pubsub_subscription_iam_binding.webapp_pubsub_binding]
+#     service_account {
+#       email = google_service_account.webapp_instance_service_account.email
+#       scopes = var.webapp_instance_scopes
+#     }
+#     boot_disk {
+#         initialize_params {
+#           image = var.webapp_instance_image
+#           size = var.webapp_instance_size
+#           type = var.webapp_instance_bootdisk_type
+#         }
+#     }
 
-    network_interface {
-        network = google_compute_network.private_vpc.name
-        subnetwork = google_compute_subnetwork.webapp_subnet.name
-        access_config {
-        network_tier = var.webapp_instance_networktier
-      }
-    }
+#     network_interface {
+#         network = google_compute_network.private_vpc.name
+#         subnetwork = google_compute_subnetwork.webapp_subnet.name
+#         access_config {
+#         network_tier = var.webapp_instance_networktier
+#       }
+#     }
 
-    metadata_startup_script = <<-EOT
-    #!/bin/bash
-    sudo truncate -s 0 /opt/webapp/application.properties
-    sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /opt/webapp/application.properties
-    sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /opt/webapp/application.properties
-    sudo echo "spring.datasource.username=${var.db_user}" >> /opt/webapp/application.properties
-    sudo echo "spring.datasource.password=${random_password.password.result}" >> /opt/webapp/application.properties
-    sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /opt/webapp/application.properties
-    sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /opt/webapp/application.properties
-    sudo echo "topic-name=${var.pubSub_topic_name}" >> /opt/webapp/application.properties
-    sudo echo "environment=${var.environment_name}" >> /opt/webapp/application.properties
-    EOT
-}
+#     metadata_startup_script = <<-EOT
+#     #!/bin/bash
+#     sudo truncate -s 0 /opt/webapp/application.properties
+#     sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /opt/webapp/application.properties
+#     sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /opt/webapp/application.properties
+#     sudo echo "spring.datasource.username=${var.db_user}" >> /opt/webapp/application.properties
+#     sudo echo "spring.datasource.password=${random_password.password.result}" >> /opt/webapp/application.properties
+#     sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /opt/webapp/application.properties
+#     sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /opt/webapp/application.properties
+#     sudo echo "topic-name=${var.pubSub_topic_name}" >> /opt/webapp/application.properties
+#     sudo echo "environment=${var.environment_name}" >> /opt/webapp/application.properties
+#     EOT
+# }
 
 data "google_dns_managed_zone" "webapp_zone" {
   name = var.dns_zone_webapp
 }
 
-resource "google_dns_record_set" "zone_instance" {
-  name = data.google_dns_managed_zone.webapp_zone.dns_name
-  managed_zone = data.google_dns_managed_zone.webapp_zone.name
-  type = var.dns_record_webapp_A
-  ttl = var.dns_record_webapp_A_ttl
-  rrdatas = [
-    google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
-  ]
-}
+# resource "google_dns_record_set" "zone_instance" {
+#   name = data.google_dns_managed_zone.webapp_zone.dns_name
+#   managed_zone = data.google_dns_managed_zone.webapp_zone.name
+#   type = var.dns_record_webapp_A
+#   ttl = var.dns_record_webapp_A_ttl
+#   rrdatas = [
+#     google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
+#   ]
+# }
 
 resource "google_pubsub_topic" "pubsub_topic" {
   name                       = var.pubSub_topic_name
@@ -402,4 +402,209 @@ resource "google_service_account_iam_member" "iam_service_accountuser" {
   service_account_id = google_service_account.cloud_function_service_account.id
   role = var.iam_service_accountuser_role
   member = google_service_account.cloud_function_service_account.member
+}
+
+resource "google_compute_region_instance_template" "webapp_instance_template" {
+  name = "webapp-instance-template1"
+  machine_type = "e2-medium"
+
+  disk {
+    source_image = "projects/dev-gcp-project-1/global/images/packer-centos8-2024-03-27-16-41-18"
+    disk_size_gb = 100
+  }
+  region = var.region
+  network_interface {
+    network = google_compute_network.private_vpc.name
+    subnetwork = google_compute_subnetwork.webapp_subnet.name
+    access_config {
+      network_tier = "PREMIUM"
+    }
+  }
+  depends_on = [google_service_account.webapp_instance_service_account, 
+    google_project_iam_binding.webapp_logging_binding, 
+    google_project_iam_binding.webapp_monitoring_binding,
+    google_pubsub_subscription_iam_binding.webapp_pubsub_binding]
+  service_account {
+    email = google_service_account.webapp_instance_service_account.email
+    scopes = var.webapp_instance_scopes
+  }
+
+  metadata_startup_script = <<-EOT
+    #!/bin/bash
+    sudo truncate -s 0 /opt/webapp/application.properties
+    sudo echo "spring.datasource.driver-class-name=org.postgresql.Driver" >> /opt/webapp/application.properties
+    sudo echo "spring.datasource.url=jdbc:postgresql://${google_sql_database_instance.db_instance.private_ip_address}:5432/${var.db_name}" >> /opt/webapp/application.properties
+    sudo echo "spring.datasource.username=${var.db_user}" >> /opt/webapp/application.properties
+    sudo echo "spring.datasource.password=${random_password.password.result}" >> /opt/webapp/application.properties
+    sudo echo "spring.jpa.properties.hibernate.dialect = org.hibernate.dialect.PostgreSQLDialect" >> /opt/webapp/application.properties
+    sudo echo "spring.jpa.hibernate.ddl-auto=update" >> /opt/webapp/application.properties
+    sudo echo "topic-name=${var.pubSub_topic_name}" >> /opt/webapp/application.properties
+    sudo echo "environment=${var.environment_name}" >> /opt/webapp/application.properties
+    EOT
+
+}
+
+resource "google_compute_region_instance_group_manager" "webapp_manager" {
+  name = "webapp-manager1"
+  region = var.region
+
+  version {
+    instance_template = google_compute_region_instance_template.webapp_instance_template.id
+    name = "new-version"
+  }
+
+  named_port {
+    name = "http"
+    port = "8080"
+  }
+
+  auto_healing_policies {
+    health_check = google_compute_region_health_check.webapp_regional_health_check.id
+    initial_delay_sec = 150
+  }
+
+  base_instance_name = "base-instance"
+  
+}
+
+resource "google_compute_region_autoscaler" "webapp_autoscaler" {
+  name = "webapp-autoscaler1"
+  region = var.region
+  target = google_compute_region_instance_group_manager.webapp_manager.id
+
+  autoscaling_policy {
+    min_replicas = 1
+    max_replicas = 3
+    cooldown_period = 60
+
+    cpu_utilization {
+      target = 0.5
+    }
+  }
+}
+
+# resource "google_compute_health_check" "webapp_health_check" {
+#   name = "webapp-health-check"
+#   timeout_sec = 5
+#   check_interval_sec = 20
+#   healthy_threshold = 5
+#   unhealthy_threshold = 5
+
+#   tcp_health_check {
+#     port = "8080"
+#     port_name = "tcp-port"
+#     request = "/healthz"
+#   }
+  
+# }
+
+resource "google_compute_region_health_check" "webapp_regional_health_check" {
+  name = "webapp-regional-health-check"
+  timeout_sec = 5
+  check_interval_sec = 20
+  healthy_threshold = 5
+  unhealthy_threshold = 5
+  region = var.region
+
+  tcp_health_check {
+    port = "8080"
+    port_name = "tcp-port"
+    request = "/healthz"
+  }
+
+
+  
+}
+
+########
+
+resource "google_compute_subnetwork" "lb_subnet" {
+  name = "lb-subnet"
+  ip_cidr_range = "192.168.5.0/24"
+  region = var.region
+  purpose = "REGIONAL_MANAGED_PROXY"
+  network = google_compute_network.private_vpc.id
+  role = "ACTIVE"
+}
+
+resource "google_compute_firewall" "health_check_firewall" {
+  name = "allow-health-check"
+  allow {
+    protocol = "tcp"
+  }
+  direction = "INGRESS"
+  network = google_compute_network.private_vpc.id
+  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
+  destination_ranges = ["192.168.0.0/24"] 
+}
+
+resource "google_compute_firewall" "allow_proxy" {
+  name = "proxy-firewall"
+  allow {
+    ports = ["8080"]
+    protocol = "tcp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports = ["443"]
+  }
+
+  direction = "INGRESS"
+  network = google_compute_network.private_vpc.id
+  source_ranges = ["192.168.5.0/24"]
+  destination_ranges = ["192.168.0.0/24"]
+  
+}
+
+
+resource "google_compute_address" "lb_ip_address" {
+  name = "lb-ip"
+}
+
+output "lb-ip" {
+  value = "${google_compute_address.lb_ip_address}"
+  
+}
+
+resource "google_compute_region_url_map" "lb_url_map" {
+  name = "lb-url-map"
+  default_service = google_compute_region_backend_service.lb_backend.id
+  
+}
+
+resource "google_compute_region_target_http_proxy" "http_proxy" {
+  name = "lb-http"
+  region = var.region
+  url_map = google_compute_region_url_map.lb_url_map.id
+  
+}
+
+resource "google_compute_forwarding_rule" "lb_forwarding_rule" {
+  name = "lb-forwarding-rule"
+  region = var.region
+  depends_on = [ google_compute_subnetwork.lb_subnet ]
+  ip_protocol = "TCP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range = "8080"
+  target = google_compute_region_target_http_proxy.http_proxy.id
+  network = google_compute_network.private_vpc.id
+  ip_address = google_compute_address.lb_ip_address.id
+}
+
+resource "google_compute_region_backend_service" "lb_backend" {
+  name = "lb-backend"
+  region = var.region
+  protocol = "HTTP"
+  port_name = "http"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  health_checks = [google_compute_region_health_check.webapp_regional_health_check.id]
+  session_affinity = "NONE"
+  timeout_sec = 30
+  backend {
+    group = google_compute_region_instance_group_manager.webapp_manager.instance_group
+    balancing_mode = "UTILIZATION"
+    capacity_scaler = 1.0
+  }
+  
 }
