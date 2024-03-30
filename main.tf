@@ -587,7 +587,7 @@ resource "google_compute_forwarding_rule" "lb_forwarding_rule" {
   depends_on = [ google_compute_subnetwork.lb_subnet ]
   ip_protocol = "TCP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
-  port_range = "8080"
+  port_range = "443"
   target = google_compute_region_target_https_proxy.https_proxy.id
   network = google_compute_network.private_vpc.id
   ip_address = google_compute_address.lb_ip_address.id
