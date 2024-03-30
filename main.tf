@@ -253,15 +253,16 @@ data "google_dns_managed_zone" "webapp_zone" {
   name = var.dns_zone_webapp
 }
 
-# resource "google_dns_record_set" "zone_instance" {
-#   name = data.google_dns_managed_zone.webapp_zone.dns_name
-#   managed_zone = data.google_dns_managed_zone.webapp_zone.name
-#   type = var.dns_record_webapp_A
-#   ttl = var.dns_record_webapp_A_ttl
-#   rrdatas = [
-#     google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
-#   ]
-# }
+resource "google_dns_record_set" "zone_instance" {
+  name = data.google_dns_managed_zone.webapp_zone.dns_name
+  managed_zone = data.google_dns_managed_zone.webapp_zone.name
+  type = var.dns_record_webapp_A
+  ttl = var.dns_record_webapp_A_ttl
+  rrdatas = [
+    # google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
+    google_compute_address.lb_ip_address.address
+  ]
+}
 
 resource "google_pubsub_topic" "pubsub_topic" {
   name                       = var.pubSub_topic_name
