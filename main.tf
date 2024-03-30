@@ -569,32 +569,32 @@ output "lb-ip" {
 }
 
 resource "google_compute_region_url_map" "lb_url_map" {
-  name = "lb-url-map"
+  name = "lb-url-map1"
   default_service = google_compute_region_backend_service.lb_backend.id
   
 }
 
-resource "google_compute_region_target_http_proxy" "http_proxy" {
-  name = "lb-http"
-  region = var.region
-  url_map = google_compute_region_url_map.lb_url_map.id
+# resource "google_compute_region_target_http_proxy" "http_proxy" {
+#   name = "lb-http"
+#   region = var.region
+#   url_map = google_compute_region_url_map.lb_url_map.id
   
-}
+# }
 
 resource "google_compute_forwarding_rule" "lb_forwarding_rule" {
-  name = "lb-forwarding-rule"
+  name = "lb-forwarding-rule1"
   region = var.region
   depends_on = [ google_compute_subnetwork.lb_subnet ]
   ip_protocol = "TCP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   port_range = "8080"
-  target = google_compute_region_target_http_proxy.http_proxy.id
+  target = google_compute_region_target_https_proxy.https_proxy.id
   network = google_compute_network.private_vpc.id
   ip_address = google_compute_address.lb_ip_address.id
 }
 
 resource "google_compute_region_backend_service" "lb_backend" {
-  name = "lb-backend"
+  name = "lb-backend1"
   region = var.region
   protocol = "HTTP"
   port_name = "http"
@@ -608,4 +608,46 @@ resource "google_compute_region_backend_service" "lb_backend" {
     capacity_scaler = 1.0
   }
   
+}
+
+
+########
+
+resource "tls_private_key" "privatekey_tls" {
+  algorithm = "RSA"
+  rsa_bits = 2048
+}
+
+resource "tls_self_signed_cert" "tls_certificate" {
+  private_key_pem = tls_private_key.privatekey_tls.private_key_pem
+  validity_period_hours = 12
+  early_renewal_hours = 3
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+  dns_names = ["skynetx.me"]
+  subject {
+    common_name = "skynetx.me"
+    organization = "student"
+  }
+}
+
+resource "google_compute_region_ssl_certificate" "ssl_certificate" {
+  name_prefix = "google-ssl-certificate"
+  private_key = tls_private_key.privatekey_tls.private_key_pem
+  certificate = tls_self_signed_cert.tls_certificate.cert_pem
+  region = var.region
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "google_compute_region_target_https_proxy" "https_proxy" {
+  name = "https-lb1"
+  region = var.region
+  url_map = google_compute_region_url_map.lb_url_map.id
+  ssl_certificates = [google_compute_region_ssl_certificate.ssl_certificate.self_link]
 }
