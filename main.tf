@@ -260,7 +260,7 @@ resource "google_dns_record_set" "zone_instance" {
   ttl = var.dns_record_webapp_A_ttl
   rrdatas = [
     # google_compute_instance.webapp_instance.network_interface[0].access_config[0].nat_ip
-    google_compute_address.lb_ip_address.address
+    google_compute_global_address.lb_ip_address.address
   ]
 }
 
@@ -460,7 +460,7 @@ resource "google_compute_region_instance_group_manager" "webapp_manager" {
   }
 
   auto_healing_policies {
-    health_check = google_compute_region_health_check.webapp_regional_health_check.id
+    health_check = google_compute_health_check.webapp_health_check.id
     initial_delay_sec = 150
   }
 
@@ -484,38 +484,36 @@ resource "google_compute_region_autoscaler" "webapp_autoscaler" {
   }
 }
 
-# resource "google_compute_health_check" "webapp_health_check" {
-#   name = "webapp-health-check"
-#   timeout_sec = 5
-#   check_interval_sec = 20
-#   healthy_threshold = 5
-#   unhealthy_threshold = 5
-
-#   tcp_health_check {
-#     port = "8080"
-#     port_name = "tcp-port"
-#     request = "/healthz"
-#   }
-  
-# }
-
-resource "google_compute_region_health_check" "webapp_regional_health_check" {
-  name = "webapp-regional-health-check"
+resource "google_compute_health_check" "webapp_health_check" {
+  name = "webapp-health-check1"
   timeout_sec = 5
   check_interval_sec = 20
   healthy_threshold = 5
   unhealthy_threshold = 5
-  region = var.region
 
   tcp_health_check {
     port = "8080"
     port_name = "tcp-port"
     request = "/healthz"
   }
-
-
   
 }
+
+# resource "google_compute_region_health_check" "webapp_regional_health_check" {
+#   name = "webapp-regional-health-check"
+#   timeout_sec = 5
+#   check_interval_sec = 20
+#   healthy_threshold = 5
+#   unhealthy_threshold = 5
+#   region = var.region
+
+#   tcp_health_check {
+#     port = "8080"
+#     port_name = "tcp-port"
+#     request = "/healthz"
+#   }
+
+# }
 
 ########
 
@@ -559,18 +557,18 @@ resource "google_compute_firewall" "allow_proxy" {
 }
 
 
-resource "google_compute_address" "lb_ip_address" {
-  name = "lb-ip"
+resource "google_compute_global_address" "lb_ip_address" {
+  name = "lb-ip1"
 }
 
 output "lb-ip" {
-  value = "${google_compute_address.lb_ip_address}"
+  value = "${google_compute_global_address.lb_ip_address}"
   
 }
 
-resource "google_compute_region_url_map" "lb_url_map" {
+resource "google_compute_url_map" "lb_url_map" {
   name = "lb-url-map1"
-  default_service = google_compute_region_backend_service.lb_backend.id
+  default_service = google_compute_backend_service.lb_backend.id
   
 }
 
@@ -581,25 +579,22 @@ resource "google_compute_region_url_map" "lb_url_map" {
   
 # }
 
-resource "google_compute_forwarding_rule" "lb_forwarding_rule" {
-  name = "lb-forwarding-rule1"
-  region = var.region
-  depends_on = [ google_compute_subnetwork.lb_subnet ]
-  ip_protocol = "TCP"
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  port_range = "443"
-  target = google_compute_region_target_https_proxy.https_proxy.id
-  network = google_compute_network.private_vpc.id
-  ip_address = google_compute_address.lb_ip_address.id
-}
+# resource "google_compute_global_forwarding_rule" "lb_forwarding_rule" {
+#   name = "lb-forwarding-rule"
+#   ip_protocol = "TCP"
+#   load_balancing_scheme = "EXTERNAL_MANAGED"
+#   port_range = "443"
+#   target = google_compute_target_https_proxy.https_proxy_lb.id
+#   # network = google_compute_network.private_vpc.id
+#   ip_address = google_compute_address.lb_ip_address.id
+# }
 
-resource "google_compute_region_backend_service" "lb_backend" {
+resource "google_compute_backend_service" "lb_backend" {
   name = "lb-backend1"
-  region = var.region
   protocol = "HTTP"
   port_name = "http"
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  health_checks = [google_compute_region_health_check.webapp_regional_health_check.id]
+  load_balancing_scheme = "EXTERNAL"
+  health_checks = [google_compute_health_check.webapp_health_check.id]
   session_affinity = "NONE"
   timeout_sec = 30
   backend {
@@ -613,41 +608,66 @@ resource "google_compute_region_backend_service" "lb_backend" {
 
 ########
 
-resource "tls_private_key" "privatekey_tls" {
-  algorithm = "RSA"
-  rsa_bits = 2048
-}
+# resource "tls_private_key" "privatekey_tls" {
+#   algorithm = "RSA"
+#   rsa_bits = 2048
+# }
 
-resource "tls_self_signed_cert" "tls_certificate" {
-  private_key_pem = tls_private_key.privatekey_tls.private_key_pem
-  validity_period_hours = 12
-  early_renewal_hours = 3
+# resource "tls_self_signed_cert" "tls_certificate" {
+#   private_key_pem = tls_private_key.privatekey_tls.private_key_pem
+#   validity_period_hours = 12
+#   early_renewal_hours = 3
 
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-  ]
-  dns_names = ["skynetx.me"]
-  subject {
-    common_name = "skynetx.me"
-    organization = "student"
+#   allowed_uses = [
+#     "key_encipherment",
+#     "digital_signature",
+#     "server_auth",
+#   ]
+#   dns_names = ["skynetx.me"]
+#   subject {
+#     common_name = "skynetx.me"
+#     organization = "student"
+#   }
+# }
+
+# resource "google_compute_region_ssl_certificate" "ssl_certificate" {
+#   name_prefix = "google-ssl-certificate"
+#   private_key = tls_private_key.privatekey_tls.private_key_pem
+#   certificate = tls_self_signed_cert.tls_certificate.cert_pem
+#   region = var.region
+#   lifecycle {
+#     create_before_destroy = true
+#   }
+# }
+
+
+resource "google_compute_managed_ssl_certificate" "lb_ssl_certificate" {
+  name = "ssl-certificate"
+  managed {
+    domains = ["skynetx.me"]
   }
 }
 
-resource "google_compute_region_ssl_certificate" "ssl_certificate" {
-  name_prefix = "google-ssl-certificate"
-  private_key = tls_private_key.privatekey_tls.private_key_pem
-  certificate = tls_self_signed_cert.tls_certificate.cert_pem
-  region = var.region
-  lifecycle {
-    create_before_destroy = true
-  }
+# resource "google_compute_region_target_https_proxy" "https_proxy" {
+#   name = "https-lbs"
+#   region = var.region
+#   url_map = google_compute_region_url_map.lb_url_map.id
+#   ssl_certificates = [google_compute_managed_ssl_certificate.lb_ssl_certificate.name]
+#   depends_on = [ google_compute_managed_ssl_certificate.lb_ssl_certificate ]
+# }
+
+resource "google_compute_target_https_proxy" "https_proxy_lb" {
+  name = "lb-https-proxy1"
+  depends_on = [ google_compute_managed_ssl_certificate.lb_ssl_certificate ]
+  url_map = google_compute_url_map.lb_url_map.id
+  ssl_certificates = [google_compute_managed_ssl_certificate.lb_ssl_certificate.name]
 }
 
-resource "google_compute_region_target_https_proxy" "https_proxy" {
-  name = "https-lb1"
-  region = var.region
-  url_map = google_compute_region_url_map.lb_url_map.id
-  ssl_certificates = [google_compute_region_ssl_certificate.ssl_certificate.self_link]
+resource "google_compute_global_forwarding_rule" "lb-lb_forwarding_rule" {
+  name = "lb-rule1"
+  ip_protocol = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+  port_range = "443"
+  target = google_compute_target_https_proxy.https_proxy_lb.id
+  ip_address = google_compute_global_address.lb_ip_address.id
 }
