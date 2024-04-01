@@ -427,10 +427,266 @@ variable "SMTP_log" {
 
 variable "SMTP_source_ranges" {
     type = list(string)
-  
+}
+
+variable "webapp_instance_manager" {
+    type = string
 }
 
 variable "SMTP_destination_ranges" {
     type = list(string)
+  
+}
+
+variable "instance_template_name" {
+    type = string
+}
+
+variable "instance_machine_type" {
+    type = string
+}
+
+variable "instance_manager_version" {
+    type = string
+}
+
+variable "named_port_name" {
+    type = string
+}
+
+variable "namedport" {
+    type = string
+}
+
+variable "base_instance_name" {
+    type = string
+}
+
+variable "autoscaler_name" {
+    type = string
+}
+
+variable "instance_initial_delay" {
+    type = number
+}
+
+variable "autoscale_min_replica" {
+    type = number
+}
+
+variable "autoscale_max_replica" {
+    type = number
+  
+}
+
+variable "autoscale_cooldown" {
+    type = number
+  
+}
+
+variable "cpu_utilization_target" {
+    type = number
+  
+}
+
+variable "webapp_health_check_name" {
+    type = string
+  
+}
+
+variable "timeout_healthcheck" {
+    type = number
+  
+}
+
+variable "healthcheck_interval" {
+  type = number
+}
+
+variable "healthy_threshold" {
+    type = number
+  
+}
+
+variable "unhealthy_threshold" {
+    type = number
+  
+}
+
+variable "tcp_port" {
+    type = string
+  
+}
+
+variable "tcp_port_name" {
+    type = string
+  
+}
+
+variable "health_check_url" {
+    type = string
+  
+}
+
+variable "lb_subnet_name" {
+    type = string
+  
+}
+
+variable "lb_subnet_ip_cidr" {
+    type = string
+  
+}
+
+variable "lb_subnet_purpose" {
+    type = string
+  
+}
+variable "lb_role" {
+    type = string
+  
+}
+
+variable "health_check_firewall_name" {
+    type = string
+  
+}
+
+variable "health_check_firewall_port" {
+    type = string
+  
+}
+
+variable "health_check_direction" {
+    type = string
+  
+}
+
+variable "health_check_source" {
+    type = list(string)
+  
+}
+
+variable "health_check_destination" {
+    type = list(string)
+  
+}
+
+variable "proxy_firewall" {
+    type = string
+  
+}
+
+variable "proxy_firewall_protocol" {
+    type = string
+  
+}
+
+variable "proxy_firewall_port1" {
+    type = list(string)
+  
+}
+
+variable "proxy_firewall_port2" {
+    type = list(string)
+  
+}
+
+variable "proxy_firewall_direction" {
+    type = string
+  
+}
+
+variable "proxy_firewall_source" {
+    type = list(string)
+  
+}
+
+variable "proxy_firewall_destination" {
+    type = list(string)
+  
+}
+
+variable "lb_ip" {
+    type = string
+  
+}
+
+variable "lb_url_map" {
+    type = string
+  
+}
+
+variable "lb_backend_name" {
+    type = string
+  
+}
+
+variable "lb_backend_protocol" {
+    type = string
+  
+}
+variable "lb_backend_port_name" {
+    type = string
+  
+}
+
+variable "lb_scheme" {
+    type = string
+  
+}
+
+variable "lb_session" {
+    type = string
+  
+}
+
+variable "lb_timeout" {
+    type = number
+  
+}
+
+variable "lb_balancing_mode" {
+    type = string
+  
+}
+
+variable "capacity_scaler_lb" {
+    type = number
+  
+}
+
+variable "ssl_certificate_name" {
+    type = string
+  
+}
+
+variable "domain_name_ssl" {
+    type = list(string)
+  
+}
+
+variable "lb_https_proxy" {
+    type = string
+  
+}
+
+variable "lb_rule_name" {
+    type = string
+  
+}
+
+variable "lb_rule_protocol" {
+    type = string
+  
+}
+
+variable "rule_scheme" {
+    type = string
+  
+}
+
+variable "rule_port_range" {
+    type = string
   
 }

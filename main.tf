@@ -406,19 +406,19 @@ resource "google_service_account_iam_member" "iam_service_accountuser" {
 }
 
 resource "google_compute_region_instance_template" "webapp_instance_template" {
-  name = "webapp-instance-template1"
-  machine_type = "e2-medium"
+  name = var.instance_template_name
+  machine_type = var.instance_machine_type
 
   disk {
-    source_image = "projects/dev-gcp-project-1/global/images/packer-centos8-2024-03-27-16-41-18"
-    disk_size_gb = 100
+    source_image = var.webapp_instance_image
+    disk_size_gb = var.webapp_instance_size
   }
   region = var.region
   network_interface {
     network = google_compute_network.private_vpc.name
     subnetwork = google_compute_subnetwork.webapp_subnet.name
     access_config {
-      network_tier = "PREMIUM"
+      network_tier = var.webapp_instance_networktier
     }
   }
   depends_on = [google_service_account.webapp_instance_service_account, 
@@ -446,55 +446,55 @@ resource "google_compute_region_instance_template" "webapp_instance_template" {
 }
 
 resource "google_compute_region_instance_group_manager" "webapp_manager" {
-  name = "webapp-manager1"
+  name = var.webapp_instance_manager
   region = var.region
 
   version {
     instance_template = google_compute_region_instance_template.webapp_instance_template.id
-    name = "new-version"
+    name = var.instance_manager_version
   }
 
   named_port {
-    name = "http"
-    port = "8080"
+    name = var.named_port_name
+    port = var.namedport
   }
 
   auto_healing_policies {
     health_check = google_compute_health_check.webapp_health_check.id
-    initial_delay_sec = 150
+    initial_delay_sec = var.instance_initial_delay
   }
 
-  base_instance_name = "base-instance"
+  base_instance_name = var.base_instance_name
   
 }
 
 resource "google_compute_region_autoscaler" "webapp_autoscaler" {
-  name = "webapp-autoscaler1"
+  name = var.autoscaler_name
   region = var.region
   target = google_compute_region_instance_group_manager.webapp_manager.id
 
   autoscaling_policy {
-    min_replicas = 1
-    max_replicas = 3
-    cooldown_period = 60
+    min_replicas = var.autoscale_min_replica
+    max_replicas = var.autoscale_max_replica
+    cooldown_period = var.autoscale_cooldown
 
     cpu_utilization {
-      target = 0.5
+      target = var.cpu_utilization_target
     }
   }
 }
 
 resource "google_compute_health_check" "webapp_health_check" {
-  name = "webapp-health-check1"
-  timeout_sec = 5
-  check_interval_sec = 20
-  healthy_threshold = 5
-  unhealthy_threshold = 5
+  name = var.webapp_health_check_name
+  timeout_sec = var.timeout_healthcheck
+  check_interval_sec = var.healthcheck_interval
+  healthy_threshold = var.healthy_threshold
+  unhealthy_threshold = var.unhealthy_threshold
 
   tcp_health_check {
-    port = "8080"
-    port_name = "tcp-port"
-    request = "/healthz"
+    port = var.tcp_port
+    port_name = var.tcp_port_name
+    request = var.health_check_url
   }
   
 }
@@ -518,47 +518,47 @@ resource "google_compute_health_check" "webapp_health_check" {
 ########
 
 resource "google_compute_subnetwork" "lb_subnet" {
-  name = "lb-subnet"
-  ip_cidr_range = "192.168.5.0/24"
+  name = var.lb_subnet_name
+  ip_cidr_range = var.lb_subnet_ip_cidr
   region = var.region
-  purpose = "REGIONAL_MANAGED_PROXY"
+  purpose = var.lb_subnet_purpose
   network = google_compute_network.private_vpc.id
-  role = "ACTIVE"
+  role = var.lb_role
 }
 
 resource "google_compute_firewall" "health_check_firewall" {
-  name = "allow-health-check"
+  name = var.health_check_firewall_name
   allow {
-    protocol = "tcp"
+    protocol = var.health_check_firewall_port
   }
-  direction = "INGRESS"
+  direction = var.health_check_direction
   network = google_compute_network.private_vpc.id
-  source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
-  destination_ranges = ["192.168.0.0/24"] 
+  source_ranges = var.health_check_source
+  destination_ranges = var.health_check_destination
 }
 
 resource "google_compute_firewall" "allow_proxy" {
-  name = "proxy-firewall"
+  name = var.proxy_firewall
   allow {
-    ports = ["8080"]
-    protocol = "tcp"
+    ports = var.proxy_firewall_port1
+    protocol = var.proxy_firewall_protocol
   }
 
   allow {
-    protocol = "tcp"
-    ports = ["443"]
+    protocol = var.proxy_firewall_protocol
+    ports = var.proxy_firewall_port2
   }
 
-  direction = "INGRESS"
+  direction = var.proxy_firewall_direction
   network = google_compute_network.private_vpc.id
-  source_ranges = ["192.168.5.0/24"]
-  destination_ranges = ["192.168.0.0/24"]
+  source_ranges = var.proxy_firewall_source
+  destination_ranges = var.proxy_firewall_destination
   
 }
 
 
 resource "google_compute_global_address" "lb_ip_address" {
-  name = "lb-ip1"
+  name = var.lb_ip
 }
 
 output "lb-ip" {
@@ -567,7 +567,7 @@ output "lb-ip" {
 }
 
 resource "google_compute_url_map" "lb_url_map" {
-  name = "lb-url-map1"
+  name = var.lb_url_map
   default_service = google_compute_backend_service.lb_backend.id
   
 }
@@ -590,17 +590,17 @@ resource "google_compute_url_map" "lb_url_map" {
 # }
 
 resource "google_compute_backend_service" "lb_backend" {
-  name = "lb-backend1"
-  protocol = "HTTP"
-  port_name = "http"
-  load_balancing_scheme = "EXTERNAL"
+  name = var.lb_backend_name
+  protocol = var.lb_backend_protocol
+  port_name = var.lb_backend_port_name
+  load_balancing_scheme = var.lb_scheme
   health_checks = [google_compute_health_check.webapp_health_check.id]
-  session_affinity = "NONE"
-  timeout_sec = 30
+  session_affinity = var.lb_session
+  timeout_sec = var.lb_timeout
   backend {
     group = google_compute_region_instance_group_manager.webapp_manager.instance_group
-    balancing_mode = "UTILIZATION"
-    capacity_scaler = 1.0
+    balancing_mode = var.lb_balancing_mode
+    capacity_scaler = var.capacity_scaler_lb
   }
   
 }
@@ -642,9 +642,9 @@ resource "google_compute_backend_service" "lb_backend" {
 
 
 resource "google_compute_managed_ssl_certificate" "lb_ssl_certificate" {
-  name = "ssl-certificate"
+  name = var.ssl_certificate_name
   managed {
-    domains = ["skynetx.me"]
+    domains = var.domain_name_ssl
   }
 }
 
@@ -657,17 +657,17 @@ resource "google_compute_managed_ssl_certificate" "lb_ssl_certificate" {
 # }
 
 resource "google_compute_target_https_proxy" "https_proxy_lb" {
-  name = "lb-https-proxy1"
+  name = var.lb_https_proxy
   depends_on = [ google_compute_managed_ssl_certificate.lb_ssl_certificate ]
   url_map = google_compute_url_map.lb_url_map.id
   ssl_certificates = [google_compute_managed_ssl_certificate.lb_ssl_certificate.name]
 }
 
 resource "google_compute_global_forwarding_rule" "lb-lb_forwarding_rule" {
-  name = "lb-rule1"
-  ip_protocol = "TCP"
-  load_balancing_scheme = "EXTERNAL"
-  port_range = "443"
+  name = var.lb_rule_name
+  ip_protocol = var.lb_rule_protocol
+  load_balancing_scheme = var.rule_scheme
+  port_range = var.rule_port_range
   target = google_compute_target_https_proxy.https_proxy_lb.id
   ip_address = google_compute_global_address.lb_ip_address.id
 }
