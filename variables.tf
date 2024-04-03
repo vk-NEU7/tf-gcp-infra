@@ -690,3 +690,8 @@ variable "rule_port_range" {
     type = string
   
 }
+
+variable "verification_link" {
+    type = string
+  
+}

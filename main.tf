@@ -327,6 +327,7 @@ resource "google_cloudfunctions2_function" "lambda_function" {
       password = "${random_password.password.result}"
       mailgun_email = var.mailgun_email
       api_key = var.mailgun_api_key
+      verification_link = var.verification_link
     }
     vpc_connector = "projects/${data.google_project.project-id.project_id}/locations/${var.region}/connectors/${google_vpc_access_connector.serverless-vpc-connector.name}"
     vpc_connector_egress_settings = var.vpc_connector_egress_settings
