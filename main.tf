@@ -413,6 +413,9 @@ resource "google_compute_region_instance_template" "webapp_instance_template" {
   disk {
     source_image = var.webapp_instance_image
     disk_size_gb = var.webapp_instance_size
+    disk_encryption_key {
+      kms_key_self_link = google_kms_crypto_key.crypto_key.id
+    }
   }
   region = var.region
   network_interface {
@@ -671,4 +674,65 @@ resource "google_compute_global_forwarding_rule" "lb-lb_forwarding_rule" {
   port_range = var.rule_port_range
   target = google_compute_target_https_proxy.https_proxy_lb.id
   ip_address = google_compute_global_address.lb_ip_address.id
+}
+
+
+resource "google_kms_key_ring" "key_ring" {
+  name = "new-key-ring"
+  project = data.google_project.project-id.project_id
+  location = var.region
+}
+
+resource "google_kms_crypto_key" "crypto_key" {
+  name = "vm-key"
+  key_ring = google_kms_key_ring.key_ring.id
+  rotation_period = "2592000s"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+
+  version_template {
+    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+  }
+}
+
+resource "google_kms_crypto_key_iam_binding" "key_iam_binding" {
+  role = "roles/cloudkms.admin"
+  crypto_key_id = google_kms_crypto_key.crypto_key.id
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
+resource "google_project_iam_binding" "key_webapp_service_account_binding" {
+  project = data.google_project.project-id.project_id
+  role = "roles/cloudkms.admin"
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
+resource "google_kms_crypto_key_iam_binding" "decrypters" {
+  role = "roles/cloudkms.cryptoKeyDecrypter"
+  crypto_key_id = google_kms_crypto_key.crypto_key.id
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
+resource "google_kms_crypto_key_iam_binding" "encrypters" {
+  role = "roles/cloudkms.cryptoKeyEncrypter"
+  crypto_key_id = google_kms_crypto_key.crypto_key.id
+  members = [
+    "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
+  ]
+}
+
+resource "google_kms_crypto_key_iam_binding" "crypto_key" {
+  crypto_key_id = google_kms_crypto_key.crypto_key.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  members = [
+    "serviceAccount:service-${data.google_project.project-id.number}@compute-system.iam.gserviceaccount.com",
+  ]
 }
