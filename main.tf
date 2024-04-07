@@ -131,7 +131,8 @@ resource "google_sql_database_instance" "db_instance" {
     name = var.db_instance_name
     region = var.region
     database_version = var.db_version
-    depends_on = [ google_service_networking_connection.networking_connection ]
+    depends_on = [ google_service_networking_connection.networking_connection,
+    google_kms_crypto_key.sql_crypto_key ]
     
     settings {
       tier = var.db_instance_tier
@@ -149,6 +150,7 @@ resource "google_sql_database_instance" "db_instance" {
       }
       availability_type = var.db_availability
     }
+    encryption_key_name = google_kms_crypto_key.sql_crypto_key.id
   
   deletion_protection = var.db_deletion_protection
 }
@@ -281,6 +283,10 @@ resource "google_storage_bucket" "bucket" {
   name     = var.bucket_name
   location = var.bucket_location
   uniform_bucket_level_access = var.bucket_uniform_access_level
+  depends_on = [ google_kms_crypto_key_iam_binding.bucket_crypto_key ]
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.bucket_crypto_key.id
+  }
 }
 
 
@@ -734,5 +740,65 @@ resource "google_kms_crypto_key_iam_binding" "crypto_key" {
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   members = [
     "serviceAccount:service-${data.google_project.project-id.number}@compute-system.iam.gserviceaccount.com",
+  ]
+}
+
+########## sql keys
+
+resource "google_kms_crypto_key" "sql_crypto_key" {
+  name = "sql-key"
+  key_ring = google_kms_key_ring.key_ring.id
+  rotation_period = "2592000s"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+
+  version_template {
+    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+  }
+}
+# resource "google_service_account" "gcp_sa_cloud_sql" {
+#   account_id = data.google_project.project-id.project_id
+#   display_name = "sql-admin-account"
+# }
+
+# resource "google_project_iam_binding" "sql_admin_binding" {
+#   project = data.google_project.project-id.project_id
+#   role = "roles/iam.serviceAccountAdmin"
+#   members = [
+#     "serviceAccount:${google_service_account.gcp_sa_cloud_sql.email}"
+#   ]
+# }
+resource "google_kms_crypto_key_iam_binding" "db_crypto_key" {
+  crypto_key_id = google_kms_crypto_key.sql_crypto_key.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  members = [
+    "serviceAccount:service-${data.google_project.project-id.number}@gcp-sa-cloud-sql.iam.gserviceaccount.com",
+  ]
+}
+
+
+### bucket keys
+
+resource "google_kms_crypto_key" "bucket_crypto_key" {
+  name = "bucket-key"
+  key_ring = google_kms_key_ring.key_ring.id
+  rotation_period = "2592000s"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+
+  version_template {
+    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+  }
+}
+
+resource "google_kms_crypto_key_iam_binding" "bucket_crypto_key" {
+  crypto_key_id = google_kms_crypto_key.bucket_crypto_key.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  members = [
+    "serviceAccount:service-${data.google_project.project-id.number}@gs-project-accounts.iam.gserviceaccount.com",
   ]
 }
