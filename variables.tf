@@ -695,3 +695,45 @@ variable "verification_link" {
     type = string
   
 }
+
+variable "key_ring_name" {
+  type = string
+}
+
+variable "vm_key_name" {
+ type = string 
+}
+
+variable "key_rotation_period" {
+    type = string
+}
+
+variable "key_algorithm" {
+    type = string
+}
+
+variable "kms_admin_role" {
+    type = string
+}
+
+variable "crypto_keydecrypter_role" {
+    type = string
+  
+}
+
+variable "crypto_keyencrypter_role" {
+    type = string
+}
+
+variable "crypto_keyencrypterdecrypter_role" {
+    type = string
+}
+
+variable "sql_key_name" {
+    type = string
+}
+
+variable "bucket_key_name" {
+    type = string
+  
+}

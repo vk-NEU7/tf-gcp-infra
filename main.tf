@@ -684,27 +684,27 @@ resource "google_compute_global_forwarding_rule" "lb-lb_forwarding_rule" {
 
 
 resource "google_kms_key_ring" "key_ring" {
-  name = "new-key-ring"
+  name = var.key_ring_name
   project = data.google_project.project-id.project_id
   location = var.region
 }
 
 resource "google_kms_crypto_key" "crypto_key" {
-  name = "vm-key"
+  name = var.vm_key_name
   key_ring = google_kms_key_ring.key_ring.id
-  rotation_period = "2592000s"
+  rotation_period = var.key_rotation_period
 
   lifecycle {
     prevent_destroy = false
   }
 
   version_template {
-    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+    algorithm = var.key_algorithm
   }
 }
 
 resource "google_kms_crypto_key_iam_binding" "key_iam_binding" {
-  role = "roles/cloudkms.admin"
+  role = var.kms_admin_role
   crypto_key_id = google_kms_crypto_key.crypto_key.id
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
@@ -713,14 +713,14 @@ resource "google_kms_crypto_key_iam_binding" "key_iam_binding" {
 
 resource "google_project_iam_binding" "key_webapp_service_account_binding" {
   project = data.google_project.project-id.project_id
-  role = "roles/cloudkms.admin"
+  role = var.kms_admin_role
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
   ]
 }
 
 resource "google_kms_crypto_key_iam_binding" "decrypters" {
-  role = "roles/cloudkms.cryptoKeyDecrypter"
+  role = var.crypto_keydecrypter_role
   crypto_key_id = google_kms_crypto_key.crypto_key.id
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
@@ -728,7 +728,7 @@ resource "google_kms_crypto_key_iam_binding" "decrypters" {
 }
 
 resource "google_kms_crypto_key_iam_binding" "encrypters" {
-  role = "roles/cloudkms.cryptoKeyEncrypter"
+  role = var.crypto_keyencrypter_role
   crypto_key_id = google_kms_crypto_key.crypto_key.id
   members = [
     "serviceAccount:${google_service_account.webapp_instance_service_account.email}"
@@ -737,7 +737,7 @@ resource "google_kms_crypto_key_iam_binding" "encrypters" {
 
 resource "google_kms_crypto_key_iam_binding" "crypto_key" {
   crypto_key_id = google_kms_crypto_key.crypto_key.id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  role          = var.crypto_keyencrypterdecrypter_role
   members = [
     "serviceAccount:service-${data.google_project.project-id.number}@compute-system.iam.gserviceaccount.com",
   ]
@@ -746,16 +746,16 @@ resource "google_kms_crypto_key_iam_binding" "crypto_key" {
 ########## sql keys
 
 resource "google_kms_crypto_key" "sql_crypto_key" {
-  name = "sql-key"
+  name = var.sql_key_name
   key_ring = google_kms_key_ring.key_ring.id
-  rotation_period = "2592000s"
+  rotation_period = var.key_rotation_period
 
   lifecycle {
     prevent_destroy = false
   }
 
   version_template {
-    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+    algorithm = var.key_algorithm
   }
 }
 # resource "google_service_account" "gcp_sa_cloud_sql" {
@@ -772,7 +772,7 @@ resource "google_kms_crypto_key" "sql_crypto_key" {
 # }
 resource "google_kms_crypto_key_iam_binding" "db_crypto_key" {
   crypto_key_id = google_kms_crypto_key.sql_crypto_key.id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  role          = var.crypto_keyencrypterdecrypter_role
   members = [
     "serviceAccount:service-${data.google_project.project-id.number}@gcp-sa-cloud-sql.iam.gserviceaccount.com",
   ]
@@ -782,22 +782,27 @@ resource "google_kms_crypto_key_iam_binding" "db_crypto_key" {
 ### bucket keys
 
 resource "google_kms_crypto_key" "bucket_crypto_key" {
-  name = "bucket-key"
+  name = var.bucket_key_name
   key_ring = google_kms_key_ring.key_ring.id
-  rotation_period = "2592000s"
+  rotation_period = var.key_rotation_period
 
   lifecycle {
     prevent_destroy = false
   }
 
   version_template {
-    algorithm = "GOOGLE_SYMMETRIC_ENCRYPTION"
+    algorithm = var.key_algorithm
   }
 }
 
+# resource "google_project_service_identity" "gcp_sa_cloud_sql" {
+#   provider = google-beta
+#   service  = "sqladmin.googleapis.com"
+# }
+
 resource "google_kms_crypto_key_iam_binding" "bucket_crypto_key" {
   crypto_key_id = google_kms_crypto_key.bucket_crypto_key.id
-  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  role          = var.crypto_keyencrypterdecrypter_role
   members = [
     "serviceAccount:service-${data.google_project.project-id.number}@gs-project-accounts.iam.gserviceaccount.com",
   ]
