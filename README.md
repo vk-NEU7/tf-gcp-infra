@@ -22,6 +22,23 @@ Instructions for setting up the infrastructure using Terraform.
     $ gcloud services enable compute.googleapis.com
     $ gcloud services enable servicenetworking.googleapis.com --project=dev-gcp-project-1
     $ gcloud services enable oslogin.googleapis.com
+    $ gcloud services enable artifactregistry.googleapis.com
+    $ gcloud services enable certificate.googleapis.com
+    $ gcloud services enable cloudbuild.googleapis.com
+    $ gcloud services enable deploymentmanager.googleapis.com
+    $ gcloud services enable dns.googleapis.com
+    $ gcloud services enable cloudfunctions.googleapis.com
+    $ gcloud services enable cloudkms.googleapis.com
+    $ gcloud services enable logging.googleapis.com
+    $ gcloud services enable monitoring.googleapis.com
+    $ gcloud services enable pubsub.googleapis.com
+    $ gcloud services enable run.googleapis.com
+    $ gcloud services enable sqladmin.googleapis.com
+    $ gcloud services enable storage-component.googleapis.com
+    $ gcloud services enable networkconnectivity.googleapis.com
+    $ gcloud services enable vpcaccess.googleapis.com
+    $ gcloud services enable serviceusage.googleapis.com
+
     ```
 
 3. **Initialize Terraform:**
